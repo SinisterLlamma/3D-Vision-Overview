@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 3D Vision Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Visualization & Content Choices: 
+        - Overview: Report Sections I.A, I.B -> Goal: Inform, Set Context -> Presentation: Formatted text -> Interaction: Scroll -> Justification: Standard intro -> Method: HTML/Tailwind.
+        - Glossary (Table 1, Sec II.A-F): Report Info -> Goal: Inform, Explore -> Presentation: Interactive HTML table, detail view, Chart.js bar chart for term category counts -> Interaction: Search, filter by category, click row for details -> Justification: Efficient data access, visual summary of term distribution -> Method: HTML/Tailwind, JS, Chart.js.
+        - Roadmap (Sec III.A-F, Table 2): Report Info -> Goal: Guide, Organize -> Presentation: Accordion for phases -> Interaction: Expand/collapse -> Justification: Manages content density -> Method: HTML/Tailwind, JS.
+        - Data Representations (Table 4, Sec II.C): Report Info -> Goal: Compare, Inform -> Presentation: Interactive HTML table -> Interaction: Sortable columns -> Justification: Clear comparison of attributes -> Method: HTML/Tailwind, JS.
+        - Seminal Papers (Table 3): Report Info -> Goal: Inform, Resource -> Presentation: Interactive HTML table -> Interaction: Filter by topic area (if applicable), sort by year -> Justification: Easy literature access -> Method: HTML/Tailwind, JS.
+        - Challenges (Sec IV.A-E): Report Info -> Goal: Inform, Highlight -> Presentation: Grid of cards -> Interaction: Hover effects -> Justification: Visually distinct presentation of key issues -> Method: HTML/Tailwind.
+        - Conclusion (Sec V): Report Info -> Goal: Summarize -> Presentation: Formatted text -> Interaction: Scroll -> Justification: Standard conclusion -> Method: HTML/Tailwind.
+    -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .nav-link { transition: all 0.3s ease; }
+        .nav-link:hover, .nav-link.active { color: #0284c7; border-bottom-color: #0284c7; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; }
+        .table-cell-truncate { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media (max-width: 768px) { .table-cell-truncate { max-width: 120px; } }
+        .chart-container { position: relative; width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; height: 350px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+        .sticky-nav { position: -webkit-sticky; position: sticky; top: 0; z-index: 50; }
+    </style>
+</head>
+<body class="bg-stone-100 text-stone-800">
+
+    <header class="bg-white shadow-md sticky-nav">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <h1 class="text-2xl font-bold text-sky-700">3D Vision Explorer</h1>
+                <nav class="hidden md:flex space-x-4">
+                    <a href="#overview" class="nav-link text-stone-600 hover:text-sky-600 border-b-2 border-transparent pb-1">Overview</a>
+                    <a href="#glossary" class="nav-link text-stone-600 hover:text-sky-600 border-b-2 border-transparent pb-1">Glossary</a>
+                    <a href="#roadmap" class="nav-link text-stone-600 hover:text-sky-600 border-b-2 border-transparent pb-1">Roadmap</a>
+                    <a href="#datareps" class="nav-link text-stone-600 hover:text-sky-600 border-b-2 border-transparent pb-1">Data Reps</a>
+                    <a href="#papers" class="nav-link text-stone-600 hover:text-sky-600 border-b-2 border-transparent pb-1">Papers</a>
+                    <a href="#challenges" class="nav-link text-stone-600 hover:text-sky-600 border-b-2 border-transparent pb-1">Challenges</a>
+                    <a href="#conclusion" class="nav-link text-stone-600 hover:text-sky-600 border-b-2 border-transparent pb-1">Conclusion</a>
+                </nav>
+                <button id="mobileMenuButton" class="md:hidden text-stone-600 hover:text-sky-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobileMenu" class="hidden md:hidden bg-white shadow-lg">
+            <a href="#overview" class="block px-4 py-2 text-stone-600 hover:bg-sky-50">Overview</a>
+            <a href="#glossary" class="block px-4 py-2 text-stone-600 hover:bg-sky-50">Glossary</a>
+            <a href="#roadmap" class="block px-4 py-2 text-stone-600 hover:bg-sky-50">Roadmap</a>
+            <a href="#datareps" class="block px-4 py-2 text-stone-600 hover:bg-sky-50">Data Reps</a>
+            <a href="#papers" class="block px-4 py-2 text-stone-600 hover:bg-sky-50">Papers</a>
+            <a href="#challenges" class="block px-4 py-2 text-stone-600 hover:bg-sky-50">Challenges</a>
+            <a href="#conclusion" class="block px-4 py-2 text-stone-600 hover:bg-sky-50">Conclusion</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <section id="overview" class="mb-12 scroll-mt-20">
+            <h2 class="text-3xl font-semibold text-sky-700 mb-6">I. Introduction to 3D Vision</h2>
+            <div class="bg-white p-6 rounded-lg shadow space-y-4">
+                <p class="leading-relaxed">The field of 3D vision represents a transformative frontier within computer vision, enabling machines to interpret and interact with the physical world in three dimensions. This capability extends far beyond traditional 2D image analysis, providing a richer understanding of spatial relationships, object geometries, and environmental layouts. The core of 3D vision encompasses two interconnected domains: 3D perception and 3D reconstruction, both of which are critical for a myriad of advanced applications.</p>
+                <h3 class="text-2xl font-medium text-sky-600 mt-4 mb-2">A. Defining 3D Vision: Perception and Reconstruction</h3>
+                <p class="leading-relaxed">3D vision refers to the capacity of computer systems to perceive and comprehend the three-dimensional structure of objects and their surrounding environments. Unlike conventional 2D vision systems that are limited to flat images, 3D vision captures and processes crucial depth information, leading to a comprehensive understanding of spatial relationships. This enhanced spatial awareness allows machines to interact with their surroundings with greater effectiveness and precision.</p>
+                <p class="leading-relaxed">Within this overarching field, <strong>3D perception</strong> focuses on the interpretation and understanding of the 3D world from sensor data. This involves a range of tasks, including identifying objects, determining their precise positions and orientations, and inferring their semantic meanings.</p>
+                <p class="leading-relaxed"><strong>3D reconstruction</strong>, conversely, is the process of capturing the shape and visual appearance of real-world objects or scenes in three dimensions. The objective is to generate a digital 3D model from various input data sources, most commonly 2D images or direct depth measurements.</p>
+                <p class="leading-relaxed">The relationship between 3D perception and 3D reconstruction is symbiotic, with advancements showing that semantic understanding can significantly enhance reconstruction. This integrated approach leads to more robust and meaningful 3D models.</p>
+                <h3 class="text-2xl font-medium text-sky-600 mt-4 mb-2">B. Importance and Applications of 3D Vision</h3>
+                <p class="leading-relaxed">3D vision is foundational across diverse applications. In <strong>autonomous driving and robotics</strong>, it's critical for environmental understanding, navigation, and SLAM. For <strong>AR/VR</strong>, it underpins immersive experiences. <strong>Medical imaging</strong> uses it for diagnostics and surgical support. <strong>Manufacturing</strong> employs it for quality control. The <strong>entertainment industry</strong> leverages it for graphics and animation. It's also instrumental in <strong>architecture, archaeology,</strong> and <strong>inventory management</strong>. These applications drive research towards real-time processing, robustness, and high accuracy.</p>
+            </div>
+        </section>
+
+        <section id="glossary" class="mb-12 scroll-mt-20">
+            <h2 class="text-3xl font-semibold text-sky-700 mb-6">II. Comprehensive Glossary of Essential 3D Vision Terms</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                 <p class="mb-6 leading-relaxed">This section provides an interactive glossary of essential 3D vision terms. You can search for terms or filter by category. Click on a term in the table to see its full definition and relevance. A chart below visualizes the distribution of terms across different categories.</p>
+                <div class="mb-6 flex flex-col sm:flex-row gap-4">
+                    <input type="text" id="glossarySearch" placeholder="Search terms..." class="flex-grow p-3 border border-stone-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow">
+                    <select id="glossaryCategoryFilter" class="p-3 border border-stone-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow bg-white">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div class="overflow-x-auto mb-6">
+                    <table class="min-w-full divide-y divide-stone-200">
+                        <thead class="bg-stone-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Term</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Category</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider hidden sm:table-cell">Brief Definition</th>
+                            </tr>
+                        </thead>
+                        <tbody id="glossaryTableBody" class="bg-white divide-y divide-stone-200">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="glossaryTermDetail" class="mt-6 p-4 border border-sky-200 rounded-lg bg-sky-50 hidden">
+                    <h4 id="detailTermName" class="text-xl font-semibold text-sky-700 mb-2"></h4>
+                    <p class="mb-1"><strong class="text-stone-600">Category:</strong> <span id="detailTermCategory"></span></p>
+                    <p class="mb-1"><strong class="text-stone-600">Definition:</strong> <span id="detailTermDefinition"></span></p>
+                    <p><strong class="text-stone-600">Relevance:</strong> <span id="detailTermRelevance"></span></p>
+                </div>
+                <div class="mt-8">
+                    <h4 class="text-xl font-medium text-sky-600 mb-4">Glossary Terms by Category</h4>
+                    <div class="chart-container bg-white p-4 rounded-lg shadow">
+                        <canvas id="glossaryCategoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="roadmap" class="mb-12 scroll-mt-20">
+            <h2 class="text-3xl font-semibold text-sky-700 mb-6">III. A Structured Roadmap for Studying 3D Vision</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-6 leading-relaxed">This roadmap outlines a structured approach to studying 3D vision, progressing from foundational mathematics to advanced topics. Click on each phase to expand its details, including key concepts and recommended resources. This progression is designed to help build strong fundamentals for future research in the field.</p>
+                <div id="roadmapAccordion" class="space-y-4">
+                </div>
+            </div>
+        </section>
+
+        <section id="datareps" class="mb-12 scroll-mt-20">
+            <h2 class="text-3xl font-semibold text-sky-700 mb-6">IV. Overview of 3D Data Representations</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-6 leading-relaxed">The choice of 3D data representation is critical, impacting algorithm design, efficiency, and model fidelity. This section provides an interactive comparison of common 3D data representations, highlighting their characteristics, advantages, disadvantages, and typical use cases. You can sort the table by clicking on column headers.</p>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-stone-200">
+                        <thead class="bg-stone-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('dataTableReps', 0)">Representation Type &#x21F5;</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider hidden md:table-cell">Description</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider hidden lg:table-cell">Key Characteristics</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('dataTableReps', 3)">Advantages &#x21F5;</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider hidden md:table-cell">Disadvantages</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('dataTableReps', 5)">Typical Use Cases &#x21F5;</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableRepsBody" class="bg-white divide-y divide-stone-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="papers" class="mb-12 scroll-mt-20">
+            <h2 class="text-3xl font-semibold text-sky-700 mb-6">V. Seminal Papers and Key Resources</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-6 leading-relaxed">This section lists seminal papers and key resources for studying 3D vision. The table is sortable by clicking on the column headers. This curated list serves as a starting point for diving deeper into specific topics and understanding the evolution of the field.</p>
+                 <div class="mb-4">
+                    <input type="text" id="papersSearch" placeholder="Search papers by title or topic..." class="w-full p-3 border border-stone-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-shadow">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-stone-200">
+                        <thead class="bg-stone-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('papersTable', 0)">Topic/Area &#x21F5;</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('papersTable', 1)">Paper/Book Title &#x21F5;</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider hidden md:table-cell">Authors</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer" onclick="sortTable('papersTable', 3)">Year &#x21F5;</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider hidden lg:table-cell">Significance/Contribution</th>
+                            </tr>
+                        </thead>
+                        <tbody id="papersTableBody" class="bg-white divide-y divide-stone-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="challenges" class="mb-12 scroll-mt-20">
+            <h2 class="text-3xl font-semibold text-sky-700 mb-6">VI. Key Challenges and Future Research Directions</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-6 leading-relaxed">Despite significant progress, 3D vision faces several fundamental challenges that drive future research. This section highlights these key issues, which stem from the complexity of 3D data and the demands of real-world applications.</p>
+                <div id="challengesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+            </div>
+        </section>
+
+        <section id="conclusion" class="scroll-mt-20">
+            <h2 class="text-3xl font-semibold text-sky-700 mb-6">VII. Conclusion and Next Steps</h2>
+            <div class="bg-white p-6 rounded-lg shadow space-y-4">
+                <p class="leading-relaxed">The domain of 3D vision, encompassing both perception and reconstruction, stands as a rapidly evolving and interdisciplinary field with profound implications across numerous sectors. Building a strong foundation in this area necessitates a systematic approach, beginning with core mathematical principles and progressing through traditional geometric methods to the advanced paradigms of deep learning.</p>
+                <p class="leading-relaxed">A key takeaway is the indispensable role of a robust mathematical background. Equally important is recognizing the historical evolution and the current synergy between classical techniques and deep learning. Despite advancements, challenges in generalization, efficiency, interpretability, handling complex environments, and data scarcity remain central to research.</p>
+                <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Recommendations for Aspiring Researchers:</h3>
+                <ul class="list-disc list-inside space-y-2 pl-4">
+                    <li><strong>Start with Fundamentals:</strong> Don't bypass mathematical and classical CV foundations.</li>
+                    <li><strong>Implement and Experiment:</strong> Solidify knowledge through practical application.</li>
+                    <li><strong>Read Seminal Papers:</strong> Stay abreast of recent publications from top-tier conferences.</li>
+                    <li><strong>Engage with the Community:</strong> Participate in forums, workshops, and open-source projects.</li>
+                    <li><strong>Identify Research Gaps:</strong> Pinpoint areas for new contributions.</li>
+                    <li><strong>Consider Interdisciplinary Approaches:</strong> Explore intersections with robotics, medical imaging, AR/VR etc.</li>
+                </ul>
+                <p class="leading-relaxed mt-4">The transformative potential of 3D vision continues to unfold. By building a strong fundamental understanding and actively engaging with the evolving research landscape, aspiring researchers are well-positioned to make significant contributions to this exciting field.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-stone-800 text-stone-300 text-center p-6 mt-12">
+        <p>&copy; 2024 Interactive 3D Vision Explorer. Content based on the provided research report.</p>
+    </footer>
+
+    <script>
+        const glossaryData = [
+            { term: "3D Vision", category: "Core Concepts", definition: "The capability of machines or computer systems to perceive and understand the three-dimensional structure of objects and environments, including depth, distance, and spatial relationships.", relevance: "Enables machines to interpret and interact with the physical world beyond flat images." },
+            { term: "3D Reconstruction", category: "Core Concepts", definition: "The process of capturing the shape and appearance of real objects or scenes to create a digital three-dimensional model, often from 2D images or depth data.", relevance: "Fundamental goal; creates digital 3D models from real-world data for various applications." },
+            { term: "3D Perception", category: "Core Concepts", definition: "The interpretation and understanding of the 3D world from sensor data, involving tasks like object identification, localization, and semantic understanding.", relevance: "Allows machines to make sense of 3D data and make informed decisions about their environment." },
+            { term: "Depth Map", category: "Core Concepts", definition: "A 2D image where each pixel's value represents the distance (depth) from the camera to the corresponding point in the scene.", relevance: "Provides direct depth information, crucial for 3D reconstruction and scene understanding." },
+            { term: "Point Cloud", category: "3D Data Representations", definition: "An unordered collection of discrete data points in 3D space, typically representing the external surface or spatial structure of an object or scene.", relevance: "Common output of 3D scanning, input for many 3D processing tasks, especially in LiDAR-based systems." },
+            { term: "Voxel / Voxel Grid", category: "3D Data Representations", definition: "A three-dimensional counterpart to a pixel; it represents a value on a regular grid in 3D space, often used for volumetric data.", relevance: "Provides a structured 3D representation compatible with 3D CNNs, useful for medical imaging and object detection." },
+            { term: "Mesh", category: "3D Data Representations", definition: "A digital representation of a 3D surface composed of vertices (corner points), edges (connecting vertices), and faces (polygons enclosing edges), defining the object's shape.", relevance: "Efficient for rendering and widely used in computer graphics and detailed surface reconstruction." },
+            { term: "Explicit 3D Representations", category: "3D Data Representations", definition: "Methods that clearly define geometric shapes and structures to directly describe the external or internal geometry of an object, such as point clouds, voxels, and meshes.", relevance: "Provide direct, interpretable geometric forms, though often discretized." },
+            { term: "Implicit 3D Representations", category: "3D Data Representations", definition: "Parameterize a signal as a continuous function, often approximated by a neural network, mapping a 3D coordinate to a value (e.g., color, density, signed distance).", relevance: "Offer resolution-agnostic, continuous representations, enabling high-fidelity novel view synthesis and compact storage." },
+            { term: "Camera Projection", category: "Camera Models & Geometry", definition: "The mathematical process of mapping 3D points from the real world onto a 2D image plane, involving extrinsic (camera position/orientation) and intrinsic (camera internal properties) transformations.", relevance: "Fundamental for understanding how 3D scenes are captured as 2D images, crucial for camera calibration." },
+            { term: "Pinhole Camera Model", category: "Camera Models & Geometry", definition: "A fundamental and simplified mathematical model of a camera, treating it as a single aperture through which light passes to form an inverted and scaled image on a 2D plane.", relevance: "The idealized basis for understanding the mathematics of image formation and camera calibration." },
+            { term: "Intrinsic Parameters", category: "Camera Models & Geometry", definition: "Internal characteristics of a camera defining how 3D camera coordinates are transformed to 2D image coordinates (e.g., focal length, principal point, distortion).", relevance: "Essential for accurate 3D reconstruction and correcting image distortions." },
+            { term: "Extrinsic Parameters", category: "Camera Models & Geometry", definition: "Define the camera's position and orientation in the 3D world coordinate system, consisting of a rotation matrix and a translation vector.", relevance: "Crucial for relating 2D image observations to 3D world coordinates and for multi-camera systems." },
+            { term: "Camera Calibration", category: "Camera Models & Geometry", definition: "The process of determining a camera's intrinsic and extrinsic parameters to ensure accurate mapping from the 3D world to the 2D image.", relevance: "Ensures precision in 3D measurements and reconstructions." },
+            { term: "Stereo Vision", category: "Traditional Techniques", definition: "A technique that obtains 3D geometric information from multiple images (typically two) captured from different viewpoints, mimicking human binocular vision.", relevance: "Provides a direct method for obtaining depth information, foundational for many 3D reconstruction methods." },
+            { term: "Structure from Motion (SfM)", category: "Traditional Techniques", definition: "A computer vision technique that estimates the 3D structure of a scene or object and the camera's motion (poses) from a series of 2D images captured from different viewpoints, relying on feature matching.", relevance: "Key for reconstructing 3D scenes and camera parameters when prior knowledge is limited." },
+            { term: "Multi-View Stereo (MVS)", category: "Traditional Techniques", definition: "A geometric approach to reconstruct a dense 3D model (e.g., point cloud) from multiple calibrated images, often used after SfM has estimated camera poses.", relevance: "Complements SfM by generating dense geometric details for a complete 3D model." },
+            { term: "Simultaneous Localization and Mapping (SLAM)", category: "Traditional Techniques", definition: "Algorithms and techniques that enable a robot or autonomous system to map an unknown environment while simultaneously tracking its own location within that map.", relevance: "Critical for autonomous navigation in dynamic and unknown environments." },
+            { term: "Bundle Adjustment (BA)", category: "Traditional Techniques", definition: "An optimization technique used in SfM and MVS to simultaneously refine the 3D coordinates of scene points and the camera parameters (poses and intrinsics) to minimize reprojection error.", relevance: "Improves the accuracy and consistency of 3D reconstructions by globally optimizing parameters." },
+            { term: "Neural Radiance Fields (NeRF)", category: "Deep Learning Concepts", definition: "A neural network-based implicit representation that models a 3D scene as a continuous function, mapping 3D coordinates and viewing directions to color and opacity.", relevance: "Achieves impressive photorealistic novel view synthesis and continuous 3D scene representation." },
+            { term: "3D Gaussian Splatting (3DGS)", category: "Deep Learning Concepts", definition: "An emerging technique for 3D reconstruction and rendering that represents a scene as a collection of 3D Gaussians, allowing for high-quality, real-time rendering.", relevance: "Offers a faster and more efficient alternative to NeRFs for real-time applications while maintaining high quality." },
+            { term: "PointNet", category: "Deep Learning Concepts", definition: "A pioneering deep neural network architecture designed to directly process unordered point clouds, respecting their permutation invariance.", relevance: "Revolutionized point cloud processing by enabling direct learning on raw 3D point data." },
+            { term: "Semantic Segmentation (3D)", category: "Deep Learning Concepts", definition: "The process of assigning a semantic label (e.g., \"road,\" \"building,\" \"person\") to each point in a point cloud or voxel in a grid, clustering points with similar characteristics.", relevance: "Provides scene-level understanding, crucial for object recognition and contextual interpretation in 3D environments." },
+            { term: "3D Object Detection", category: "Deep Learning Concepts", definition: "The task of identifying and localizing objects in a 3D scene, typically by predicting 3D bounding boxes or shapes.", relevance: "Critical for autonomous systems to identify and interact with specific objects in their environment." },
+            { term: "Diffusion Models for 3D", category: "Deep Learning Concepts", definition: "Generative models that transform 3D data generation into a reverse diffusion process, gradually denoising random noise to generate desired shapes.", relevance: "Offer powerful generative capabilities for creating realistic and diverse 3D content and robust noise handling." }
+        ];
+
+        const roadmapPhases = [
+            { 
+                title: "Phase 1: Foundational Mathematics", 
+                content: `
+                    <p class="mb-2">The initial phase focuses on establishing a robust mathematical understanding.</p>
+                    <h5 class="font-semibold mb-1 text-stone-700">Key Concepts:</h5>
+                    <ul class="list-disc list-inside space-y-1 pl-4 mb-2">
+                        <li><strong>Linear Algebra:</strong> Vectors, Matrices, SVD, Homogeneous Coordinates. Crucial for transformations and representations.</li>
+                        <li><strong>Multivariable Calculus:</strong> Gradients, Optimization (Gradient Descent). Underpins neural network training.</li>
+                        <li><strong>Probability & Statistics:</strong> Distributions, Bayesian Inference. For handling uncertainty and noise.</li>
+                        <li><strong>Projective Geometry:</strong> Pinhole Model, Homography. Basis for 3D-to-2D projection.</li>
+                    </ul>
+                    <h5 class="font-semibold mb-1 text-stone-700">Recommended Resources:</h5>
+                    <ul class="list-disc list-inside space-y-1 pl-4">
+                        <li>Gallier & Quaintance - Linear Algebra and Optimization</li>
+                        <li>Khan Academy - Multivariable Calculus</li>
+                        <li>Hartley & Zisserman - Multiple View Geometry</li>
+                    </ul>`
+            },
+            { 
+                title: "Phase 2: Core Computer Vision and Multi-View Geometry", 
+                content: `
+                    <p class="mb-2">Focuses on how 3D information is extracted from 2D images.</p>
+                    <h5 class="font-semibold mb-1 text-stone-700">Key Concepts:</h5>
+                    <ul class="list-disc list-inside space-y-1 pl-4 mb-2">
+                        <li><strong>Image Formation & Camera Models:</strong> Pinhole model, intrinsic/extrinsic parameters, camera calibration.</li>
+                        <li><strong>Feature Detection & Matching:</strong> SIFT, SURF, ORB descriptors, matching algorithms.</li>
+                        <li><strong>Multi-View Geometry Fundamentals:</strong> Epipolar geometry, fundamental/essential matrix, triangulation.</li>
+                        <li><strong>Camera Calibration & Pose Estimation:</strong> Zhang's method, pose estimation techniques.</li>
+                        <li><strong>Stereo Vision & Depth Estimation:</strong> Disparity, depth map generation.</li>
+                    </ul>
+                    <h5 class="font-semibold mb-1 text-stone-700">Recommended Resources:</h5>
+                    <ul class="list-disc list-inside space-y-1 pl-4">
+                        <li>"A Comprehensive Guide to Understand Camera Projection and Parameters" (e-con Systems)</li>
+                        <li>Hartley & Zisserman - Multiple View Geometry</li>
+                        <li>"Photogrammetry Explained: From Multi-View Stereo to Structure from Motion"</li>
+                    </ul>`
+            },
+            { 
+                title: "Phase 3: Traditional 3D Reconstruction Algorithms", 
+                content: `
+                    <p class="mb-2">Understanding classic, geometry-based approaches.</p>
+                    <h5 class="font-semibold mb-1 text-stone-700">Key Concepts:</h5>
+                    <ul class="list-disc list-inside space-y-1 pl-4 mb-2">
+                        <li><strong>Structure from Motion (SfM):</strong> Full pipeline (feature matching to sparse point cloud).</li>
+                        <li><strong>Multi-View Stereo (MVS):</strong> Dense 3D reconstruction from calibrated images.</li>
+                        <li><strong>Simultaneous Localization and Mapping (SLAM):</strong> Mapping unknown environments while tracking location (Visual SLAM, LiDAR SLAM).</li>
+                        <li><strong>3D Data Representations Revisited:</strong> Deeper dive into point clouds, voxels, meshes.</li>
+                        <li><strong>Bundle Adjustment (BA):</strong> Global optimization of camera and point parameters.</li>
+                    </ul>
+                    <h5 class="font-semibold mb-1 text-stone-700">Recommended Resources:</h5>
+                    <ul class="list-disc list-inside space-y-1 pl-4">
+                        <li>COLMAP software</li>
+                        <li>"Geometrical 3D Reconstruction"</li>
+                        <li>"A Glimpse Into SLAM" / "What Is SLAM?"</li>
+                    </ul>`
+            },
+            { 
+                title: "Phase 4: Deep Learning for 3D Vision", 
+                content: `
+                    <p class="mb-2">Introduces modern deep learning architectures and techniques for 3D data.</p>
+                    <h5 class="font-semibold mb-1 text-stone-700">Key Concepts:</h5>
+                    <ul class="list-disc list-inside space-y-1 pl-4 mb-2">
+                        <li><strong>Deep Learning Fundamentals:</strong> CNNs, backpropagation, frameworks (TensorFlow, PyTorch).</li>
+                        <li><strong>Point Cloud Processing with DL:</strong> PointNet, PointNet++, DGCNN, Graph Neural Networks (GNNs).</li>
+                        <li><strong>Neural Radiance Fields (NeRFs) & Implicit Representations:</strong> Continuous scene representation, novel view synthesis, SDFs.</li>
+                        <li><strong>3D Gaussian Splatting:</strong> Fast, high-quality alternative to NeRFs.</li>
+                        <li><strong>DL for 3D Object Detection & Segmentation:</strong> Semantic, instance, panoptic segmentation.</li>
+                    </ul>
+                    <h5 class="font-semibold mb-1 text-stone-700">Recommended Resources:</h5>
+                    <ul class="list-disc list-inside space-y-1 pl-4">
+                        <li>Goodfellow, Bengio, Courville - Deep Learning</li>
+                        <li>Qi et al. - PointNet, PointNet++ papers</li>
+                        <li>Mildenhall et al. - NeRF paper</li>
+                        <li>Kerbl et al. - 3D Gaussian Splatting paper</li>
+                    </ul>`
+            },
+            { 
+                title: "Phase 5: Advanced Topics and Emerging Trends", 
+                content: `
+                    <p class="mb-2">Explores the cutting edge of 3D vision research.</p>
+                    <h5 class="font-semibold mb-1 text-stone-700">Key Concepts:</h5>
+                    <ul class="list-disc list-inside space-y-1 pl-4 mb-2">
+                        <li><strong>Diffusion Models for 3D Generation:</strong> Shape generation, image-to-3D, text-to-3D.</li>
+                        <li><strong>Vision-Language Models for 3D:</strong> Multimodal understanding and generation.</li>
+                        <li><strong>Challenges & Open Problems:</strong> Generalization, robustness, efficiency, interpretability, data scarcity.</li>
+                    </ul>
+                    <h5 class="font-semibold mb-1 text-stone-700">Recommended Resources:</h5>
+                    <ul class="list-disc list-inside space-y-1 pl-4">
+                        <li>Survey papers on diffusion models for 3D</li>
+                        <li>Papers like PE3R, SA3D</li>
+                        <li>Articles on open problems in computer vision</li>
+                    </ul>`
+            }
+        ];
+
+        const dataRepsData = [
+            { type: "Point Cloud", description: "An unordered set of discrete 3D points, each with coordinates (x, y, z) and often additional attributes like color or intensity.", characteristics: "Sparse, unstructured, direct sensor output (e.g., LiDAR).", advantages: "Direct capture of raw 3D data, high precision for sampled points.", disadvantages: "Unordered nature makes it difficult for standard CNNs, sparse, no explicit topology or surface connectivity.", useCases: "LiDAR data, 3D scanning, input for PointNet and similar architectures, autonomous driving." },
+            { type: "Voxel Grid", description: "A 3D grid of volumetric pixels (voxels), where each voxel represents a discrete unit of space and stores a value (e.g., occupancy, color, density).", characteristics: "Regular, structured, fixed resolution.", advantages: "Compatible with 3D CNNs, explicit spatial relationships, easy to perform boolean operations.", disadvantages: "High memory consumption (voluminous for fine resolutions), quantization loss, resolution-dependent, can be sparse.", useCases: "Medical imaging (CT/MRI scans), 3D object detection (voxel-based methods), scene understanding." },
+            { type: "Mesh", description: "A collection of connected vertices, edges, and faces (polygons, typically triangles or quadrilaterals) that define a continuous surface in 3D space.", characteristics: "Explicit topology (connectivity), can represent complex shapes and details.", advantages: "Efficient for rendering, widely supported in computer graphics, accurate surface representation, compact for dense surfaces.", disadvantages: "Fixed topology can be difficult to deform dynamically, less flexible for learning, requires surface reconstruction from raw data.", useCases: "3D modeling, animation, surface reconstruction, virtual reality, game development." },
+            { type: "Neural Implicit Representation", description: "A continuous function, typically a neural network, that maps 3D coordinates (and sometimes viewing directions) to properties like color, density, or signed distance to a surface.", characteristics: "Continuous, resolution-agnostic, learned from data.", advantages: "\"Infinite resolution\" (can be sampled at arbitrary detail), compact storage for complex scenes, enables novel view synthesis.", disadvantages: "Slower rendering (inference) compared to explicit methods, requires network training, \"black box\" nature, can be computationally intensive to optimize.", useCases: "Neural Radiance Fields (NeRFs), 3D shape generation, novel view synthesis, scene completion." }
+        ];
+
+        const papersData = [
+            { topic: "Core CV Text", title: "Computer Vision: Algorithms and Applications", authors: "Richard Szeliski", year: "2022 (2nd ed.)", significance: "Comprehensive overview of fundamental algorithms and classical approaches in computer vision." },
+            { topic: "Multi-View Geometry", title: "Multiple View Geometry in Computer Vision", authors: "Richard Hartley, Andrew Zisserman", year: "Classic", significance: "Seminal text exploring the mathematical underpinnings of 3D reconstruction, stereo vision, and camera calibration." },
+            { topic: "Introductory CV", title: "Introductory Techniques for 3D Computer Vision", authors: "Emanuele Trucco, Alessandro Verri", year: "1998", significance: "Provides foundational techniques for 3D computer vision." },
+            { topic: "Camera Projection", title: "A Comprehensive Guide to Understand Camera Projection and Parameters", authors: "e-con Systems", year: "2025", significance: "Detailed explanation of camera projection, intrinsic/extrinsic parameters, and calibration." },
+            { topic: "SfM Software", title: "COLMAP", authors: "Johannes Schönberger et al.", year: "Open-source", significance: "Widely used photogrammetry software for Structure from Motion and Multi-View Stereo." },
+            { topic: "Point Cloud Processing", title: "PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation", authors: "Charles R. Qi, Hao Su, Kaichun Mo, Leonidas J. Guibas", year: "2017 (CVPR)", significance: "Pioneering work for direct deep learning on unordered point clouds, respecting permutation invariance." },
+            { topic: "Hierarchical Point Processing", title: "PointNet++: Deep Hierarchical Feature Learning on Point Sets in a Metric Space", authors: "Charles R. Qi, Li Yi, Hao Su, Leonidas J. Guibas", year: "2017 (NeurIPS)", significance: "Extends PointNet with hierarchical feature learning and addresses non-uniform point densities." },
+            { topic: "Graph-based Point Processing", title: "Dynamic Graph CNN for Learning on Point Clouds (DGCNN)", authors: "Yue Wang, Yongbin Sun, Ziwei Liu, Shengcai Liao, Jian Sun", year: "2019 (TOG)", significance: "Introduces graph-based local aggregation for point clouds, improving accuracy over PointNet." },
+            { topic: "Neural Radiance Fields", title: "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis", authors: "Ben Mildenhall, Pratul P. Srinivasan, Matthew Tancik, et al.", year: "2020 (ECCV)", significance: "Introduced a powerful implicit representation for high-fidelity novel view synthesis from sparse 2D images." },
+            { topic: "Real-time Neural Rendering", title: "3D Gaussian Splatting for Real-Time Radiance Field Rendering", authors: "Bernhard Kerbl, Georg Maier, Thomas Leimkühler, Dmytro Mishkin", year: "2023 (SIGGRAPH)", significance: "Achieved real-time, high-quality rendering for 3D scenes, offering a faster alternative to NeRFs." },
+            { topic: "Diffusion Models for 3D", title: "Score-Based Generative Modeling through Stochastic Differential Equations", authors: "Yang Song, Jascha Sohl-Dickstein, Diederik P. Kingma, et al.", year: "2020 (ICLR)", significance: "Foundational work on score-based generative models, influencing 3D diffusion models." },
+            { topic: "2D-to-3D Lifting", title: "Segment Anything in 3D with NeRFs (SA3D)", authors: "Jiahui Lei, Mingrui Chen, Yuying Zeng, et al.", year: "2023 (NeurIPS)", significance: "Proposes leveraging 2D foundation models (SAM) with NeRFs for efficient 3D segmentation." },
+            { topic: "General Deep Learning", title: "Deep Learning", authors: "Ian Goodfellow, Yoshua Bengio, Aaron Courville", year: "2016 (MIT Press)", significance: "Comprehensive textbook covering theoretical foundations, optimization, and architectures of deep learning." }
+        ];
+        
+        const challengesData = [
+            { title: "Generalization & Robustness", description: "Models struggle with diverse real-world conditions, lighting changes, occlusions, and 'long-tail' scenarios not well-represented in training data. Critical for applications like autonomous driving." },
+            { title: "Computational Efficiency", description: "High-resolution 3D reconstruction and perception are computationally intensive, limiting real-time performance, especially on edge devices. A trade-off often exists between accuracy and speed." },
+            { title: "Interpretability & Explainability", description: "Deep learning models often act as 'black boxes', making it hard to understand decisions, diagnose errors, or build trust, especially in safety-critical applications." },
+            { title: "Complex & Dynamic Environments", description: "Handling moving objects, changing scenes, occlusions, and varying point densities remains a significant challenge for robust operation in dynamic settings." },
+            { title: "Data Scarcity & Annotation", description: "Acquiring and labeling large-scale, diverse 3D datasets is costly and time-consuming, impeding the training of generalizable models. Solutions include synthetic data and self-supervised learning." }
+        ];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const glossaryTableBody = document.getElementById('glossaryTableBody');
+            const categoryFilter = document.getElementById('glossaryCategoryFilter');
+            const searchInput = document.getElementById('glossarySearch');
+            const termDetailDiv = document.getElementById('glossaryTermDetail');
+            const detailTermName = document.getElementById('detailTermName');
+            const detailTermCategory = document.getElementById('detailTermCategory');
+            const detailTermDefinition = document.getElementById('detailTermDefinition');
+            const detailTermRelevance = document.getElementById('detailTermRelevance');
+            
+            const roadmapAccordion = document.getElementById('roadmapAccordion');
+            const dataTableRepsBody = document.getElementById('dataTableRepsBody');
+            const papersTableBody = document.getElementById('papersTableBody');
+            const papersSearchInput = document.getElementById('papersSearch');
+            const challengesGrid = document.getElementById('challengesGrid');
+
+            const mobileMenuButton = document.getElementById('mobileMenuButton');
+            const mobileMenu = document.getElementById('mobileMenu');
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            document.querySelectorAll('#mobileMenu a').forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+
+
+            const categories = [...new Set(glossaryData.map(item => item.category))];
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categoryFilter.appendChild(option);
+            });
+
+            function populateGlossaryTable(filteredData) {
+                glossaryTableBody.innerHTML = '';
+                filteredData.forEach(item => {
+                    const row = glossaryTableBody.insertRow();
+                    row.className = 'hover:bg-sky-50 cursor-pointer transition-colors';
+                    
+                    const termCell = row.insertCell();
+                    termCell.textContent = item.term;
+                    termCell.className = 'px-4 py-3 text-sm font-medium text-sky-700';
+                    
+                    const categoryCell = row.insertCell();
+                    categoryCell.textContent = item.category;
+                    categoryCell.className = 'px-4 py-3 text-sm text-stone-600';
+
+                    const definitionCell = row.insertCell();
+                    definitionCell.textContent = item.definition.substring(0, 80) + (item.definition.length > 80 ? '...' : '');
+                    definitionCell.className = 'px-4 py-3 text-sm text-stone-500 hidden sm:table-cell table-cell-truncate';
+                    
+                    row.addEventListener('click', () => {
+                        detailTermName.textContent = item.term;
+                        detailTermCategory.textContent = item.category;
+                        detailTermDefinition.textContent = item.definition;
+                        detailTermRelevance.textContent = item.relevance;
+                        termDetailDiv.classList.remove('hidden');
+                        termDetailDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                        document.querySelectorAll('#glossaryTableBody tr').forEach(tr => tr.classList.remove('bg-sky-100'));
+                        row.classList.add('bg-sky-100');
+                    });
+                });
+            }
+
+            function filterGlossary() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const selectedCategory = categoryFilter.value;
+                const filteredData = glossaryData.filter(item => 
+                    (item.term.toLowerCase().includes(searchTerm) || item.definition.toLowerCase().includes(searchTerm)) &&
+                    (selectedCategory === '' || item.category === selectedCategory)
+                );
+                populateGlossaryTable(filteredData);
+            }
+
+            searchInput.addEventListener('input', filterGlossary);
+            categoryFilter.addEventListener('change', filterGlossary);
+            
+            populateGlossaryTable(glossaryData);
+
+            function createGlossaryChart() {
+                const categoryCounts = glossaryData.reduce((acc, item) => {
+                    acc[item.category] = (acc[item.category] || 0) + 1;
+                    return acc;
+                }, {});
+                const chartLabels = Object.keys(categoryCounts);
+                const chartData = Object.values(categoryCounts);
+
+                new Chart(document.getElementById('glossaryCategoryChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: 'Number of Terms',
+                            data: chartData,
+                            backgroundColor: 'rgba(2, 132, 199, 0.6)', // sky-600 with opacity
+                            borderColor: 'rgba(2, 132, 199, 1)', // sky-600
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, suggestedMax: Math.max(...chartData) + 2 }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.raw}`;
+                                    }
+                                }
+                            }
+                        },
+                        onResize: (chart, size) => {
+                           
+                        }
+                    }
+                });
+            }
+            createGlossaryChart();
+
+            roadmapPhases.forEach(phase => {
+                const phaseDiv = document.createElement('div');
+                phaseDiv.className = 'border border-stone-200 rounded-lg overflow-hidden';
+                
+                const button = document.createElement('button');
+                button.className = 'w-full p-4 text-left bg-stone-50 hover:bg-stone-100 focus:outline-none transition-colors flex justify-between items-center';
+                button.innerHTML = `<span class="text-lg font-medium text-sky-700">${phase.title}</span> <span class="accordion-icon text-sky-600 text-xl transform transition-transform duration-300">&#x25B8;</span>`; // ▸
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'accordion-content p-4 border-t border-stone-200 bg-white';
+                contentDiv.innerHTML = phase.content;
+                
+                button.addEventListener('click', () => {
+                    const icon = button.querySelector('.accordion-icon');
+                    if (contentDiv.style.maxHeight && contentDiv.style.maxHeight !== '0px') {
+                        contentDiv.style.maxHeight = '0px';
+                        icon.classList.remove('rotate-90');
+                    } else {
+                        // Close other open accordions
+                        document.querySelectorAll('#roadmapAccordion .accordion-content').forEach(el => el.style.maxHeight = '0px');
+                        document.querySelectorAll('#roadmapAccordion .accordion-icon').forEach(el => el.classList.remove('rotate-90'));
+                        
+                        contentDiv.style.maxHeight = contentDiv.scrollHeight + "px";
+                        icon.classList.add('rotate-90');
+                    }
+                });
+                
+                phaseDiv.appendChild(button);
+                phaseDiv.appendChild(contentDiv);
+                roadmapAccordion.appendChild(phaseDiv);
+            });
+
+            function populateDataTable(bodyId, data) {
+                const tableBody = document.getElementById(bodyId);
+                tableBody.innerHTML = '';
+                 data.forEach(item => {
+                    const row = tableBody.insertRow();
+                    row.className = 'hover:bg-sky-50 transition-colors';
+                    Object.values(item).forEach((text, index) => {
+                        const cell = row.insertCell();
+                        cell.innerHTML = text; // Use innerHTML to render any HTML tags if needed in data
+                        cell.className = 'px-4 py-3 text-sm text-stone-600 table-cell-truncate';
+                        if (bodyId === 'dataTableRepsBody') { // Specific styling for data reps table
+                            if (index === 0) cell.classList.add('font-medium', 'text-sky-700');
+                            if (index === 1 || index === 2 || index === 4) cell.classList.add('hidden', (index === 1 || index === 4) ? 'md:table-cell' : 'lg:table-cell');
+                        } else if (bodyId === 'papersTableBody') { // Specific styling for papers table
+                             if (index === 1) cell.classList.add('font-medium', 'text-sky-700');
+                             if (index === 2 || index === 4) cell.classList.add('hidden', index === 2 ? 'md:table-cell' : 'lg:table-cell');
+                        }
+                    });
+                });
+            }
+            
+            populateDataTable('dataTableRepsBody', dataRepsData);
+            
+            function filterPapers() {
+                const searchTerm = papersSearchInput.value.toLowerCase();
+                const filteredData = papersData.filter(item => 
+                    item.title.toLowerCase().includes(searchTerm) || 
+                    item.topic.toLowerCase().includes(searchTerm) ||
+                    item.authors.toLowerCase().includes(searchTerm)
+                );
+                populateDataTable('papersTableBody', filteredData);
+            }
+            papersSearchInput.addEventListener('input', filterPapers);
+            populateDataTable('papersTableBody', papersData);
+
+
+            challengesData.forEach(challenge => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-6 rounded-lg shadow hover:shadow-xl transition-shadow transform hover:-translate-y-1';
+                card.innerHTML = `
+                    <h4 class="text-xl font-semibold text-sky-700 mb-2">${challenge.title}</h4>
+                    <p class="text-sm text-stone-600 leading-relaxed">${challenge.description}</p>
+                `;
+                challengesGrid.appendChild(card);
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 100) { // Adjusted offset for sticky nav
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active', 'text-sky-600', 'border-sky-600');
+                    link.classList.add('text-stone-600', 'border-transparent');
+                    if (link.getAttribute('href').substring(1) === current) {
+                        link.classList.add('active', 'text-sky-600', 'border-sky-600');
+                        link.classList.remove('text-stone-600', 'border-transparent');
+                    }
+                });
+            });
+            
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                         // Approximate height of sticky header for offset
+                        const headerOffset = document.querySelector('header').offsetHeight + 20; // 20px additional buffer
+                        const elementPosition = targetElement.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: "smooth"
+                        });
+                    }
+                });
+            });
+
+        });
+
+        let sortDirections = {};
+        function sortTable(tableIdSuffix, columnIndex) {
+            const tableBody = document.getElementById(tableIdSuffix + 'Body');
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
+            
+            const tableKey = tableIdSuffix + '-' + columnIndex;
+            const currentDirection = sortDirections[tableKey] || 'asc';
+            const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+            sortDirections[tableKey] = newDirection;
+
+            rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].textContent.trim().toLowerCase();
+                const bText = b.cells[columnIndex].textContent.trim().toLowerCase();
+
+                if (newDirection === 'asc') {
+                    return aText.localeCompare(bText, undefined, {numeric: true, sensitivity: 'base'});
+                } else {
+                    return bText.localeCompare(aText, undefined, {numeric: true, sensitivity: 'base'});
+                }
+            });
+
+            tableBody.innerHTML = '';
+            rows.forEach(row => tableBody.appendChild(row));
+        }
+
+    </script>
+</body>
+</html>
